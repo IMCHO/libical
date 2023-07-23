@@ -369,6 +369,29 @@ static char * shell_quote(const char *s)
 }
 #endif
 
+int File_Copy (char FileSource [], char FileDestination [])
+{
+    int   c;
+    FILE *stream_R;
+    FILE *stream_W;
+    
+    stream_R = fopen (FileSource, "r");
+    if (stream_R == NULL)
+        return -1;
+    stream_W = fopen (FileDestination, "w");   //create and write to file
+    if (stream_W == NULL)
+    {
+        fclose (stream_R);
+        return -2;
+    }
+    while ((c = fgetc(stream_R)) != EOF)
+        fputc (c, stream_W);
+    fclose (stream_R);
+    fclose (stream_W);
+    
+    return 0;
+}
+
 icalerrorenum icalfileset_commit(icalset* set)
 {
     char tmp[ICAL_PATH_MAX]; 
@@ -399,21 +422,11 @@ icalerrorenum icalfileset_commit(icalset* set)
         snprintf(tmp,ICAL_PATH_MAX,"copy %s %s.bak", fset->path, fset->path);
 #endif
 
-#ifndef _WIN32_WCE
-        if(system(tmp) < 0){
-#else
-
-        wtmp = wce_mbtowc(tmp);
-
-        if (CreateProcess (wtmp, L"", NULL, NULL, FALSE, 0, NULL, NULL, NULL,&pi)){
-#endif
+        if (File_Copy(fset->path, tmp) < 0) {
             icalerror_set_errno(ICAL_FILE_ERROR);
             return ICAL_FILE_ERROR;
         }
     }
-#ifdef _WIN32_WCE
-    free(wtmp);
-#endif
 
     if(lseek(fset->fd, 0, SEEK_SET) < 0){
 	icalerror_set_errno(ICAL_FILE_ERROR);
